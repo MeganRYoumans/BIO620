@@ -72,5 +72,109 @@ rev(sort(x))
 ## range returns a vector with the minimum and maximum of all given arguments
 ## arguments, ... any numeric or character objects, na.rm any NA's omitted, finite, all non-finite elements omitted 
 ## Q11
-
-    
+apes <- read.csv('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Datasets/orangutanCSV.csv')
+apes
+## names of columns 
+names(apes)
+summary(apes)
+## structure of a dataset (observations (rows), and variables (columns))
+str(apes)
+## show True or False for whether something in continuous (numbers) or categorical (drop down text example)
+sapply(apes, is.numeric)
+sapply(apes, is.character)
+summary(apes)
+## fix the data alignment issue in csv, turn the data into proper column formatting since it was showing up all in one column 
+apes <- read.csv('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Datasets/orangutanCSV.csv', sep = ".")
+apes <- read.csv('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Datasets/orangutanCSV.csv', sep = "\t")
+apes
+names(apes)
+## column names fixed, then looking for something in the column data using $ to select from data set apes
+apes$location == "Borneo"
+## finding only the males extracted - setting males as defined by apes data set, then sex inside apes data set, equal to only "males"
+males = apes[apes$sex == "male",]
+males
+## continuing to sort the data for males only so selecting males as data set and then what you want, then selection from males, and sorting
+males[order(males$weight.kg, decreasing = TRUE),]
+apes[order(apes$weight.kg, decreasing = TRUE),]
+## lightest weight of ALL orangutans is 30 kg female 
+females = apes[apes$sex == "female",]
+females
+## still using $ to select data from the female data set
+range(females$weight.kg)
+apes
+## had an issue here where I overwrote "apes" with other data so when I was trying to do the sumatra data pull it was giving an error so I had to re-run the apes = csv document and it's fixes 
+apes[apes$location == "Sumatra",]
+## can just do below and don't have to sum the sumatra data to get to it 
+mean(apes$weight.kg[apes$location == "Sumatra"])
+## summing tool use 
+sum(apes$Tool.use == "TRUE")
+## still not exactly clear when to include a , or no , between brackets or parethesis to make something work 
+## finding weight of the three largest females 
+females
+## start with [ instead of ( when it's going to include both and then use ),] (,) is included here at end to separate
+females = females[order(females$weight.kg, decreasing = TRUE),]
+females
+## no , here at the end? 
+## summing the weight of females data set and selecting the first through the third data points to sum
+sum(females$weight.kg[1:3])
+## Q12
+## sampling example sample(x, size, replace = FALSE, prob = NULL) 
+organisms <- c("Bird", "Bat", "Giraffe", "Lion", "Hyena", "Vole", "Lizard", "Pufferfish", "Whale", "Ape")
+sample(organisms, 10, replace = TRUE)
+sample(organisms, 10, replace = TRUE)
+sample(organisms, 10, replace = FALSE)
+sample(organisms, 10, replace = FALSE)
+## replacing = true means that animals can be repeated or selected a second time as a result, versus no replacement which removes them from the pool of answers
+## Baseball data import
+## Q13
+baseball <- read.csv('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Datasets/baseballCSV.csv')
+baseball
+## fix to data again same as orangutan data
+baseball <- read.csv('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Datasets/baseballCSV.csv', sep = ".")
+baseball <- read.csv('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Datasets/baseballCSV.csv', sep = "\t")
+baseball
+##Column names
+names(baseball)
+## Sum total of how many games played, won and lost respectively
+sum(baseball$Games)
+sum(baseball$Wins)
+sum(baseball$Losses)
+## greatest positive and greatest negative value
+max(baseball$Wins)
+max(baseball$Losses)
+## combining to find total distance between max and max pos and neg...? 
+difference <- baseball$Wins - baseball$Losses
+difference
+## trying to find the teams that have the greatest difference from 13C
+names(baseball)
+## had trouble getting this to work and ended up being more simple than I thought
+max(difference)
+min(difference)
+##start with team name, which difference is the max (what team), same for min
+baseball$Franchise[which(difference == max(difference))]
+baseball$Franchise[which(difference == min(difference))]
+## 3 teams Red sox highest win and loss percentage against 
+sorted_wins_sox <- baseball[rev(order(baseball$Win.Loss.Percent)),]
+sorted_wins_sox$Franchise[1:3]
+## or... which shoes the actual percent data in addition to team name
+sorted_wins_sox[1:3, c("Franchise", "Win.Loss.Percent")]
+## 3 teams Rex sox lowest win loss percentage against
+## doesn't need rev(reverse) because it's already in ascending order lowest first standard
+sorted_loss_sox <- baseball[order(baseball$Win.Loss.Percent),]
+sorted_loss_sox
+sorted_loss_sox$Franchise[1:3]
+sorted_loss_sox[1:3, c("Franchise", "Win.Loss.Percent")]
+## ratio of runs allowed to runs scored and plotted 
+## vector math to divide the ratio columns
+ratio <- baseball$Runs.Allowed / baseball$Runs.Scored
+plot(ratio, baseball$Win.Loss.Percent)
+## the above shows a plot with a downward trend of win loss percent as ratio increases 
+## adding a trendline - lm() for linear model
+## ~ = predicted by? so trendline the win percentage as predicted by the radio
+trend <- lm(baseball$Win.Loss.Percent ~ ratio)
+abline(trend, col = "red")
+## have to add this for the line to show up, and give it a color 
+summary(trend)
+## slope - showing down trend here with the data
+## r-squared? == number between 0-1 that shows variation in win percent, closer to 1 = stronger, so stronger relationship here to the scatter plot data because a lot of it falls on or close to the line rather than being random
+## you also get shown a p-calue here, value under 0.05 is significant = here the numbers mean it's unlikely by chance so relationship is not random, it has evidence of being significately related 
