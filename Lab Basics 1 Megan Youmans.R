@@ -154,16 +154,19 @@ min(difference)
 baseball$Franchise[which(difference == max(difference))]
 baseball$Franchise[which(difference == min(difference))]
 ## 3 teams Red sox highest win and loss percentage against 
-sorted_wins_sox <- baseball[rev(order(baseball$Win.Loss.Percent)),]
-sorted_wins_sox$Franchise[1:3]
+## updating this because I named it sox but didn't sort by red sox at all
+## also not seeing red sox on list of teams, only seeing chicago white sox 
+sorted_wins <- baseball[rev(order(baseball$Win.Loss.Percent)),]
+sorted_wins$Franchise[1:3]
 ## or... which shoes the actual percent data in addition to team name
-sorted_wins_sox[1:3, c("Franchise", "Win.Loss.Percent")]
+sorted_wins[1:3, c("Franchise", "Win.Loss.Percent")]
 ## 3 teams Rex sox lowest win loss percentage against
+## updated not red sox, just a sorting order of franchises, red sox missing in data set only white sox present 
 ## doesn't need rev(reverse) because it's already in ascending order lowest first standard
-sorted_loss_sox <- baseball[order(baseball$Win.Loss.Percent),]
-sorted_loss_sox
-sorted_loss_sox$Franchise[1:3]
-sorted_loss_sox[1:3, c("Franchise", "Win.Loss.Percent")]
+sorted_loss <- baseball[order(baseball$Win.Loss.Percent),]
+sorted_loss
+sorted_loss$Franchise[1:3]
+sorted_loss[1:3, c("Franchise", "Win.Loss.Percent")]
 ## ratio of runs allowed to runs scored and plotted 
 ## vector math to divide the ratio columns
 ratio <- baseball$Runs.Allowed / baseball$Runs.Scored
