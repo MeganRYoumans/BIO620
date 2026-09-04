@@ -1,0 +1,197 @@
+---
+title: "Lab Basics 2"
+author: "Megan Youmans"
+date: "2026-09-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. 
+
+```{r iris data}
+head(iris)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r iris, echo=FALSE}
+##Q1
+boxplot(iris$Sepal.Length)
+boxplot(iris$Sepal.Length,ylab="7",main="Iris",col="blue")
+
+##Q2
+## below make sure to use $ to select, and then put colors in order of axis
+boxplot(iris$Sepal.Length~iris$Species, ylab="iris$Species",xlab="iris$Petal.Width", main="Iris",col=c("red","blue","yellow"))
+
+##Q3 barplots in R don't automatically use tilde formatting like the above so have to use conditionals  y=bx+a 
+barplot(iris$Sepal.Length[iris$Species=="virginica"])
+##Q4
+?lm()
+## first four arguments: formula - description of model to be fitted, data - optional data frame list or environment, subset - optional vector of subset of observations, weights - optional vector of weights used in fitting process
+plot(iris$Petal.Length, iris$Petal.Width)
+##check using statistics, using a linear model 
+lm(iris$Petal.Width~iris$Petal.Length)
+##using above without saving as object returns the coefficients, intercept and slope. y=bx+a = petalwidth = 0.4158 * petallength - 0.3631 
+##plot the trendline (the above data) onto the data
+##abline() manual way 
+plot(iris$Petal.Length, iris$Petal.Width)
+abline(a=-0.3631, b=0.4158)
+##edit how the line looks
+mod = lm(iris$Petal.Width~iris$Petal.Length)
+plot(iris$Petal.Length,iris$Petal.Width)
+abline(mod, col="blue", lty=3,lwd=2)
+## for above - response then predictor.. so y, x  width is y, length is x, then on next use in x,y order for plot
+##Q5
+#lty is line type, lwd is line width so can change using those units
+##abline plotted the line and then was modified with the color and line type desired
+mod = lm(iris$Petal.Width~iris$Petal.Length)
+plot(iris$Petal.Length,iris$Petal.Width)
+abline(mod, col="gray", lty=2, lwd=5)
+##how to get statsitical parameters for the above 
+summary(mod)
+##Q6
+##Rsquared is 0.9271 and p-value is <2.2e-16. p-value is <0.05 so result is significant and different from 0
+## ..
+## ..
+## Factors - can we see correlations? Can check using conditional values. Factors represent categorical data so that it corresponds to specific numerical values 
+## as.factor() 
+as.factor(iris$Species)
+##levels shown at bottom of the as.factor() information gives specific categories present in order, and would be numerical order 1,2,3 etc ... 
+as.numeric(as.factor(iris$Species))
+##forces data types to be numeric if possible
+## setup a dataframe to visualize easier
+myFactor = as.factor(iris$Species)
+myNumFactor = as.numeric((as.factor(iris$Species)))
+df = data.frame(myFactor,myNumFactor)
+df
+## R has an 8 color palette, black red green blue cyan magenta yellow gray, numbered 1-8. Col (color) can be changed by changing the number 
+plot(iris$Petal.Length,iris$Petal.Width,col=1:4)
+abline(mod,col=4)
+## will use multiple colors 
+## also can change character shapes, 1-25 using pch() inside of plot(). Shapes 21-25 can also be colored. 
+## change colors of the plot by species type
+plot(iris$Petal.Length,iris$Petal.Width, col=as.numeric(as.factor(iris$Species)), pch=as.numeric(as.factor(iris$Species)))
+## add a legend() 
+?legend
+##Q7
+mod = lm(iris$Sepal.Width~iris$Sepal.Length,col=1:3,pch=1:3)
+plot(iris$Sepal.Length,iris$Sepal.Width,
+col=as.numeric(as.factor(iris$Species)),
+pch=as.numeric(as.factor(iris$Species)))
+abline(mod, col="blue", lty=2, lwd=5)
+legend("topleft", c("Setosa","Versicolor","Virginica"), col=1:3,pch=1:3)
+summary(mod)
+## intercept = 3.41895, slope = -0.06188, Rsquared = 0.01382 , pvalue = 0.1519 
+##
+## install ape package 
+## can do ?ape on packages 
+## NOTE ?ape didn't work here 
+
+## building a function
+multiply <- function(values,n)
+{
+  res <- values*n
+  return(res)
+}
+numbers = 1:5
+multiply(numbers,2)
+##in this function above we multiplied. have to define the function, declate the arguments as values and n. Brackets is the code that the function will do. Return tells bracket code wht to do, in this case show result. 
+##Q8 
+add <- function(x,y)
+{
+  res <- x+y
+  return(res)
+}  
+add(5,7)
+
+#Loops
+##make a temporary variable i then assign the variable the range of numbers -> in (essentially for every x) and then the curly brackets is (do y)
+for(i in c(1:10))
+{print(i)}
+
+##Q9
+for(i in c(20:30))
+{
+  if (i %% 2 == 0)
+  {print(i)
+  }
+  }
+
+y <- c(8,3,5,7,6,6,8,9,2,3,9,4,10,4,11)
+y
+sample(y)
+sample(y)
+##above sampled without replacement, value only there once in a shuffled order 
+##sample with replacement below using replace=T
+sample(y,replace=T)
+sample(y,replace=T)
+
+##Q10
+prime <- c(2,3,5,7,11,13,17,19,23,29)
+sample(prime)
+sample(prime,replace=T)
+
+##random numbers can be generated but need to specify a R distribution to pull from (Normal distribution, Chi-squared, Binomial, Uniform) ?distribution lists them also 
+
+##shows what the function does without () - norm pulls a C function
+rnorm
+##show arguments
+args(rnorm)
+
+norm=rnorm(n=20)
+norm
+hist(norm)
+plot(density(norm))
+
+##can plot multiple density functions at same time using lines()
+##new data sets
+norm1=rnorm(20,0,1)
+norm2=rnorm(20,0.5,0.5)
+plot(density(norm1),col="red")
+lines(density(norm2),col="blue")
+##but blue goes off the axis so let's fit it with ylim and xlim for setting min/max plot values
+plot(density(norm1),col="red",ylim=c(0,1),xlim=c(-4,4))
+lines(density(norm2),col="blue")
+
+##uniform distribution use runif(), chi-squared rchisq(), binomial rbinom() - r in front of each means "random 
+
+##Q11
+##generate 100 points  amount =100, mean=0, sd=1 
+##normal distribution 
+norm3=rnorm(100,0,1)
+norm3
+plot(density(norm3),col="green")
+plot(hist(norm3))
+
+##uniform distribution
+args(runif)
+norm3=runif(100,0,1)
+norm3
+plot(density(norm3))
+plot(hist(norm3))
+
+##chi-squared distribution
+args(rchisq)
+##df degrees freedom (number of independent values that can vary), ncp non-centrality parameter (deviation from null hypoth?)
+norm3=rchisq(100,1,0)
+norm3
+plot(density(norm3))
+plot(hist(norm3))
+
+##binomial distribution
+args(rbinom)
+##n amount of random values you want, size total independent trials, prob of any single trial results in success number between 0 and 1 
+norm3=rbinom(100,100,0.5)
+norm3
+plot(density(norm3))
+plot(hist(norm3))
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
