@@ -1,0 +1,87 @@
+---
+title: "Wheat - Megan Youmans"
+author: "Megan Youmans"
+date: "2026-09-05"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+Hypothesis: Will there be a visible correlation between varieties at different sow rates in terms of how much yield they produce? Will certain varieties produce more yield over others and could be an indicator at what type of wheat to plant? Or could sowrate itself be an indicator regardless of variety for yield production? 
+Types of Variables: Numerical values 
+
+
+```{r wheat data}
+
+wheat <- read.csv('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Datasets/wheat2.csv')
+wheat
+names(wheat)
+##"sowrate" "variety" "yield" 
+table(wheat)
+summary(wheat)
+
+```
+
+##  Plots
+
+
+```{r wheat, echo=FALSE}
+
+boxplot(wheat$yield~wheat$variety)
+##wheat variety 1 seems to produce slightly higher yield, with a few outliers. Variety 2 has one major outlier.
+boxplot(wheat$yield~wheat$sowrate)
+##sowrate of 4 has highest yield and largest yield range than other sow rates, followed roughly by 1, 3, and 2. 
+boxplot(wheat$yield)
+##reviewing for outliers
+
+hist(wheat$yield)
+##highest frequency of yield is between 8 and 9 
+hist(wheat$sowrate)
+##wheat sowrates seem to have been done evenly 
+
+dotchart(wheat$yield, wheat$variety)
+
+plot(wheat$yield~wheat$sowrate, col =(wheat$variety), pch=(wheat$variety), xlab="Sow Rate", ylab="Yield", main="Wheat")
+legend("topleft", c("Variety 1", "Variety 2"), col=1:2, pch=1:2)
+abline(lm(wheat$yield~wheat$sowrate), col=3,lwd=2)
+
+mod = lm(wheat$yield~wheat$sowrate)
+summary(mod)
+##pvalue below 0.05 so some significance 
+
+plot(wheat$yield~wheat$variety)
+
+plot(wheat$sowrate~wheat$yield, col =(wheat$variety), pch=(wheat$variety), xlab="Yield", ylab="Sow Rate", main="Wheat")
+legend("topleft", c("Variety 1", "Variety 2"), col=1:2, pch=1:2)
+abline(lm(wheat$sowrate~wheat$yield), col=3,lwd=2)
+
+##below based on group work idea 
+
+interaction.plot(
+  x.factor = wheat$sowrate, ##variable on xaxis
+  trace.factor = wheat$variety,
+  response = wheat$yield, ##variable on y axis response to above factors
+  fun = mean, ##calculated summary
+  type = "b", ##p makes points, b adds lines to the points 
+  col=2:4, pch=2:4,
+  xlab="Sow rate",
+  ylab = "Yield",
+  main = "Yield as a function of sow rate and variety",
+  trace.label = "Variety",
+  legend = FALSE
+)
+legend("top", title = "Variety", leg.txt <- c("1", "2"), col=2:4,pch=2:4)
+
+## the interaction plot is trying to answer if sow rates affect on yield depends on the type of wheat? 
+
+##Reviewing the plots 
+
+##Wheat variety 1 seems to outperform variety 2 in terms of yield based on the sow rates, but sow rate 4 overall is better for both varieties in terms of a higher yield. Based on the hypothesis, there is correlation between the row rate on the yield of both varieties with sow rate 2 producing less yield than any other, sow rate 4 being the strongest yield against both varieties of wheat, and wheat variety 1 overall outperforming variety 2 in every sow rate. 
+```
+

@@ -1,0 +1,140 @@
+---
+title: "OatWheat and Bacteria Assignment Week 2"
+author: "Megan Youmans"
+date: "2026-09-01"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown for Oat Dataset
+
+Hypothesis: Higher amount of grain in ears of oats will give a bigger yield, wherein as the amount of grain in ears of oats increases we should see a yield amount that is larger respectively  
+Types of Variables: Numerical 
+Response is yield, focal predictors is grain. Yield is the response to the predictor of grain amount. 
+
+## R Markdown for Bacteria Dataset
+
+Hypothesis: Certain bacterial diseases will correlate to certain levels of toxins and therefore we may be able to predict what disease someone may have based on the toxin level based on the differences 
+Types of variables: Categorical, Numerical 
+
+
+
+```{r data}
+oat <- read.csv('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Datasets/oat.csv')
+oat
+names(oat)
+
+oatdata <- oat
+summary(oatdata)
+table(oatdata)
+table(oat)
+table(oat$grain,oat$yield)
+
+##
+##
+
+bacteria <-read.csv('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Datasets/bacteria.csv')
+bacteria
+names(bacteria)
+head(bacteria)
+bacteriadata <- bacteria
+summary(bacteriadata)
+##species, diagnosis, toxin
+table(bacteria)
+table(bacteria$toxin,bacteria$species)
+
+```
+
+## Plots
+
+```{r plots, echo=FALSE}
+
+## Oat Data Set 
+
+ratio <- oat$grain/oat$yield
+plot(ratio, oat$grain)
+
+boxplot(oat$yield)
+boxplot(oat$yield,ylab="oat$yield",xlab="oat$grain",main="Oat Yield",col="green")
+
+boxplot(oat$grain)
+boxplot(oat$grain,ylab="oat$grain",xlab="oat$yield",main="Oat Grain",col="blue")
+
+boxplot(oat$yield~oat$grain, ylab="oat$grain", xlab="oat$yield", main="Yield from Grain Amount")
+
+hist(oat$yield)
+##most yield frequency is between 5.0 and 5.4 
+hist(oat$grain)
+##most grain frequency is between 22 and 26
+summary(oat)
+## alt way of doing the above as below per textbook. summary and then use with value to make a summary value available for hist to use for the graph 
+with(oat,hist(yield))
+with(oat,hist(grain))
+
+?dotchart
+dotchart(oat$grain,oat$yield)
+
+plot(oat$grain,oat$yield)
+mod = lm(oat$yield~oat$grain)
+plot(oat$grain,oat$yield)
+abline(mod,col="blue",lty=3,lwd=2)
+summary(mod)
+##p value below 0.5 so significant data 
+table(oat)
+
+##Exploring results for oat data set  
+
+##There are a couple of outliers such as a low point of about 5.0 yield to 22 grain ratio, as well as above a 5.8 yield around the 26 grain ratio. Overall we are seeing a correlation between amount of grains to amount of resulting yield in a general trend with the line, though most values are above or below the line. Overall I would have preferred to see more data sets to build a better understanding of the correlation, but the data points suggest at least a mild correlation to the hypothesis that as grians increase yield amount will increase. 
+
+
+##
+##
+
+## Bacteria Data Set 
+
+bacteria
+
+boxplot(bacteria$toxin~bacteria$species,ylab="bacteria$toxin",xlab="bacteria$species",main="Bacteria",col=2:5)
+
+boxplot(bacteria$toxin~bacteria$diagnosis,ylab="bacteria$toxin",xlab="bacteria$diagnosis",main="Bacteria Diagnosis",col=2:5)
+
+hist(bacteria$toxin)
+barplot(bacteria$toxin[bacteria$species=="bacterA"])
+
+df <- data.frame(Species = rep(c("bacterA","bacterB","bacterC","bacterD"), Diagnosis = rep(c("apendicitis","carc.intestine","carc.rectum","skin.absces"), Value = bacteria$toxin)))
+df
+
+## suggestion from stack overflow
+## interesting plot but want to refine this more for this data set... not sure how 
+plot(x = as.numeric(as.factor(bacteria$species)), y = bacteria$toxin, col = as.numeric(as.factor(bacteria$diagnosis)))
+## there is some hinting here that certain bacteria, at specific toxin levels cause certain diagnoses that change as the toxin amount increases
+
+##below didn't work 
+plot(x = as.numeric(as.factor(bacteria$species), y = bacteria$toxin, xaxt='n', col = as.numeric(as.factor(bacteria$diagnosis))))
+## adding axis here then caused it not to run 
+
+##had issues setting up the parenthesis right for this one
+plot(x = as.numeric(as.factor(bacteria$species)), y = bacteria$toxin, col = as.numeric(as.factor(bacteria$diagnosis)),pch = as.numeric(as.factor(bacteria$diagnosis)), ## had to add pch same as the col to make the shapes change from all circles to associate to the legend
+xaxt = "n", xlab="Species", ylab="Toxin Amount") ##xaxt removes axis labels and then you can relabel them with xlab and ylab
+axis(1,at = 1:4, labels = levels(as.factor(bacteria$species))) ## then new axis for X to be the species names themselves 
+##move legend to top out of the way of the data
+legend("top", c("apendicitis","carc.intestine","carc.rectum","skin.absces"), col=1:4,pch=1:4)
+## changing col and pch here from 1:4 to 2:5 for example changes the legend but not the graph 
+
+## Exploring results for bacteria data set 
+
+## In the bar plot, intestine and rectum diagnosis highest correlated to higher toxin levels, apendicitis at lower toxin levels, and skin absess at the lowest toxin level in comparison. Also when comparing species to toxin levels, bacterD showed the largest range per toxin amount, followed by A, C, and B with the smallest range.
+## In the histogram there was an indication that most patients surveyed showed a bacterial frequency between 1 and 1.4 toxin level. 
+## There is moderate correlation between toxin amount and what disease will result from the bacteria present. Over all of the four bacterial species, the disease determined seems to be similar given a similar toxin amount. Bacter A and BacterD have relatively clean diagnosis levels where at least two diseases can be ruled out at certain toxin levels, and in the case of BacterD the diagnosis to toxin level is slightly more ordered which could make it the best out of the four as a predictor species for patients. 
+
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
