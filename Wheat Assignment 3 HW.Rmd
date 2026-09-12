@@ -1,0 +1,144 @@
+---
+title: "Wheat Megan Youmans"
+output:
+  html_document: default
+  word_document: default
+date: "2026-09-09"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+## R Markdown
+
+##Wheat Data Set
+## yield, winter, ears, pH, P, K, Mg 
+
+##Hypothesis
+##Variables are all numerical 
+##yield of wheat is the response to the environmental factors, predictors could be winter(temperature), ears and pH of soil
+##co variates could be the quality of the soil with P, K, and Mg levels 
+
+##Seeing correlations between P and pH levels, and also Yield to Mean number of Overwintering plants. 
+## Plotting how P and pH values compared against yield and overwintering mean amounts 
+
+
+```{r wheat}
+wheat <- read.csv('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Datasets 2/wheat.csv')
+wheat
+summary(wheat)
+
+```
+
+## Plots
+
+```{r, echo=FALSE}
+plot(wheat)
+wheat_corr <- cor(wheat[,2:7])
+wheat_corr
+corrplot::corrplot(wheat_corr, method = "color")
+## pH and P correlation noted 
+car::scatterplotMatrix(~wheat$pH+wheat$P+wheat$yield, id=list(n=3), data=wheat)
+## pH increases, P increases, but as P increases, wheat yield potentially decreases, but midlevel pH seems to be best for wheat? 
+
+##scatterplots 
+##had an issue with the scatterplotMatrix and scatterplots with car data set for some reason, adding car:: was the workaround 
+car::scatterplot(wheat$yield,wheat$ears)
+car::scatterplot(wheat$P,wheat$pH)
+car::scatterplot(wheat$yield,wheat$ears)
+car::scatterplot(wheat$winter,wheat$yield)
+
+##amount of overwintering plants survive based on P and pH  
+
+wheatoverwinteringplants <- cut(wheat$winter, breaks = 3, labels = c("Few","Medium","Most")) 
+##separate out amount of overwintering plants counted 
+
+par(mar = c(5,4,4,8))
+## add space outside box for legend
+
+interaction.plot(
+  x.factor=wheat$pH,
+  trace.factor = wheatoverwinteringplants,
+  response = wheat$P,
+  fun = mean,
+  type = "b",
+  col=1:3, pch=1:3,
+  xlab="pH",
+  ylab="Soil P",
+  main = "Soil Factors",
+  trace.label = "Mean # of Overwintering Plants",
+  legend = FALSE
+)
+legend("bottomright", inset = c(-0.30,0), xpd=TRUE, title="Mean # of Overwintering Plants", leg.txt <- c("Few", "Medium", "Most"), col=1:3,pch=1:3)
+
+## best average means of overwintering plants counted between pH 5.6-6.4, P levels 60-90 
+
+
+## Wheat yield affected by P and pH 
+
+wheatyieldamount <- cut(wheat$yield, breaks = 3, labels = c("Few","Medium","Most")) 
+##separate out amount of yield  
+
+par(mar = c(5,4,4,8))
+## add space outside box for legend
+
+interaction.plot(
+  x.factor=wheat$pH,
+  trace.factor = wheatyieldamount,
+  response = wheat$P,
+  fun = mean,
+  type = "b",
+  col=1:3, pch=1:3,
+  xlab="pH",
+  ylab="Soil P",
+  main = "Soil Factors",
+  trace.label = "Wheat Yield Amount",
+  legend = FALSE
+)
+legend("bottomright", inset = c(-0.30,0), xpd=TRUE, title="Wheat Yield Amount", leg.txt <- c("Few", "Medium", "Most"), col=1:3,pch=1:3)
+
+##wheat yield is highest between pH 6 and 6.4 and P levels at around 60
+##
+
+##
+
+plevels <- cut(wheat$P, breaks = 2, labels = c("Low", "High")) 
+pHlevels <- cut(wheat$pH, breaks = 2, labels = c("Low", "High")) 
+
+wheattrace <- interaction(plevels, pHlevels, sep = "& pH")
+
+par(mar = c(5,4,4,12))
+## add space outside box for legend
+
+interaction.plot(
+  x.factor=wheat$winter,
+  trace.factor = wheattrace,
+  response = wheat$yield,
+  fun = mean,
+  type = "b",
+  col=1:6, pch=1:6,
+  xlab="Winter",
+  ylab="Yield",
+  main = "Result",
+  trace.label = "P & pH Levels",
+  legend = FALSE
+)
+
+legend("bottomright", inset = c(-0.45,0), xpd=TRUE, title="P & pH", legend = levels(wheattrace), col=1:6,pch=1:6)
+
+## best Yield to lowest mean avg of overwintering plants tends to be with high P and low pH 
+
+
+##boxplot 
+boxplot(wheat$yield~wheat$winter)
+boxplot(wheat$yield~wheat$P)
+##wheat more tolerant at low to medium P levels  
+boxplot(wheat$yield~wheat$pH)
+##wheat seems tolerant of pH 5.4-6.4
+
+
+```
+
+

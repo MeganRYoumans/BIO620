@@ -1,0 +1,107 @@
+---
+title: "Bats"
+author: "Megan Youmans"
+date: "2026-09-05"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+##This data set observes bat calls and calls that indicate foraging across multiple sites. The sites have different variations in the forest for vegtation that has been thinned or not. There is also whether or not a site had access to water. 
+## We hypothesize that we will see an interactive relationship between activity and the levels of thinning of the forest, potentailly also affected by the distance from a water source, in our chosen case creek water. 
+## on the corrplot we see an inverse relationship with activity/foraging to treatment and water distance but this should in theory be showing a positive correlation because more thinned areas and closer to water did show increased bat activity on the interaction plot, probably due to how the plot is reading the numbers versus interpreting the data
+
+
+```{r bats data}
+
+bats <- read.csv('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Datasets 2/Bats_data.csv')
+bats
+summary(bats)
+names(bats)
+
+```
+
+## Plots
+
+
+```{r plots}
+
+plot(bats$Activity~bats$Foraging)
+
+table(bats$Site)
+
+##y distance from water 
+##x area type 
+##and activity plotted against 
+
+plot(bats$Activity,bats$Foraging)
+boxplot(bats$Activity,bats$Foraging)
+hist(bats$Activity)
+hist(bats$Foraging)
+hist(bats$Distance.creek.water)
+
+library(corrplot)
+
+treatmentcorrplot <- as.numeric(bats$Treatment.thinned)
+
+##setting a subset to build the corr plot using a categorical value 
+bats_treatment_corr <- bats[,c(2:3,5,7:10)]
+##set up the categorical value 
+bats_treatment_corr[,3] <- as.numeric(as.factor(bats_treatment_corr[,3]))
+
+bats_corr <- cor(bats_treatment_corr)
+corrplot::corrplot(bats_corr, method = "color")
+
+##shows correlation between activity and the level of thinning on an area in an inverse notation (because as the area is thinned, bat activity increases due to abiltiy to have flight paths)
+
+batscreekdisatance <- cut(bats$Distance.creek.water, breaks = 3, labels = c("Near","Medium","Far")) ##creating a variable for distance to separeate on graph rather than having it on the y axis 
+## cut cuts up the data into the breaks as specified in this case as three and by generic distance 
+
+##Foraging Bat Activity Behavior Plot 
+par(mar = c(5,4,4,8)) ## to add more space outside the chart box for the legend
+
+interaction.plot(
+  x.factor = bats$Treatment.thinned, 
+  trace.factor = batscreekdisatance,
+  response = bats$Foraging,
+  fun = mean, 
+  type = "b", 
+  col=1:3, pch=1:3,
+  xlab="Forest Type",
+  ylab = "Number of Bat Calls (Foraging)",
+  main = "Australian bat activity based on regrowth forest thinning",
+  trace.label = "Distance to creek",
+  legend = FALSE
+)
+legend("topright", inset = c(-0.30,0), xpd = TRUE, #for the legend to put it outside of the chart box to ther right
+       title = "Distance To Water", 
+       legend = c("Near", "Medium", "Far"), col=1:3,pch=1:3)
+
+##Non-Foraging Behavior Plot
+par(mar = c(5,4,4,8)) ## to add more space outside the chart box for the legend
+
+interaction.plot(
+  x.factor = bats$Treatment.thinned, 
+  trace.factor = batscreekdisatance,
+  response = bats$Activity,
+  fun = mean, 
+  type = "b", 
+  col=1:3, pch=1:3,
+  xlab="Forest Type",
+  ylab = "Number of Bat Calls (Non-Foraging)",
+  main = "Australian bat activity based on regrowth forest thinning",
+  trace.label = "Distance to creek",
+  legend = FALSE
+)
+legend("topright", inset = c(-0.30,0), xpd = TRUE, #for the legend to put it outside of the chart box to ther right
+       title = "Distance To Water", 
+       legend = c("Near", "Medium", "Far"), col=1:3,pch=1:3)
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
