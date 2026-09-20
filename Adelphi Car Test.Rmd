@@ -1,0 +1,138 @@
+---
+title: "Campus Car Study"
+output: html_document
+date: "2026-09-18"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Is there a difference in status of cars driven at Adelphi between the faculty, resident and commuter students? 
+## Hypothesis: We will see that the commuter students will have a higher proportion of status level cars, luxury cars, than faculty or resident students at Adelphi. 
+
+Data Collection Methods: 
+Explanatory Variable: type of parking sticker (commuter, resident, faculty)
+Response Variable: brand of car
+Covariate: open lots versus garage, time of day, and day of the week 
+When: data will be collected on a weekday and mid-morning to capture all three populations
+Where: Nexus lot (1) and garage, then science building lot (4) and garage
+Sample size: in each parking lot, we will haphazardly identify 9 of each sticker type (27 cars per 4 lots; n = 108). 
+
+
+```{r}
+
+library(readxl)
+library(dplyr)
+##read the excel files so the two sheet tabs can be read
+##separate import by sheet tab
+adelphidata <- read_excel('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Assignments/HW 4/Adelphi Car Sticker Dataset.xlsx', sheet = "Data")
+carprices <- read_excel('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Assignments/HW 4/Adelphi Car Sticker Dataset.xlsx', sheet = "Mean")
+alldata <- adelphidata %>% left_join(carprices, by = "Brand")
+##join both data sets so that there is a read for all of the data all at once to be able to compare the mean prices of brand of cars 
+
+names(adelphidata)
+names(carprices)
+
+summary(adelphidata)
+summary(carprices)
+
+```
+
+## Plots
+
+```{r, echo=FALSE}
+
+carcount <- table(alldata$`Sticker Type`, alldata$Brand)
+barplot(carcount, col = c("yellow", "brown", "gray"),
+        legend.text = TRUE,
+        args.legend = list(x="top"),
+        las = 2, ##rotates axis labels
+        main = "Car Brand Counts",
+        ylab = "Count")
+
+sorted <- carprices[order(carprices$`Mean Cost (Numerical)`),]
+barplot(sorted$`Mean Cost (Numerical)`,
+        names.arg = sorted$Brand,
+        col = "yellow",
+        main = "Mean Cost of Car Brands")
+
+
+carcount <- table(alldata$Observers, alldata$Brand)
+
+barplot(carcount,
+        col = c("yellow", "brown", "gray"),
+        legend.text = rownames(carcount),
+        args.legend = list(title = "Observers", x = "top"),
+        las = 2,
+        cex.names = 0.7,
+        ylab = "Count",
+        main = "Brand by Observer")
+
+mosaicplot(carcount,
+           color = rainbow(ncol(carcount)),
+           las = 2,
+           main = "Observer vs. Brand",
+           xlab = "Observer",
+           ylab = "Brand")
+
+chisq.test(carcount)
+
+
+##Are Observers biased to type of car? 
+
+##make a car count table
+carcount <- table(alldata$Observers, alldata$Brand)
+## row percentages
+carpercent <- prop.table(carcount, margin=1) * 100
+## prop table turns counts into proportional data decimals between 0 and 1 
+##margin = 1 how to calculate proportions in each row to sum to 1 or 100% 
+## *100 takes the decimals and turns them into percentags 
+
+rowSums(carpercent)
+##checks percent
+
+##use t. to flip row and columns for the desired bar plot
+t(carpercent)
+
+##set space for the margins for the larger legend
+par(mar = c(8,4,4,10))
+
+barplot(t(carpercent),
+        beside = TRUE, ##grouped bars by observer
+        col = rainbow(ncol(carpercent)), ##one color per brand
+        las = 2, ##rotates the text
+        cex.names = 0.8, ##cex makes text size smaller 
+        ylab = "% Oberservers Brands",
+        main = "Brands by Observers (%)")
+legend (x="topright", inset = c(-0.17, 0), ## negative pushes it outside of box
+        legend = colnames(carpercent),
+        fill = rainbow(ncol(carpercent)),
+        title = "Brand",
+        cex = 0.6,
+        xpd = TRUE)
+
+## car type to lot seen 
+
+carcount2 <- table(alldata$Lot, alldata$Brand)
+par(mar = c(8,4,4,10))
+
+barplot(t(carcount2),
+        beside = TRUE, ##grouped bars by observer
+        col = rainbow(ncol(carcount2)), ##one color per brand
+        las = 2, ##rotates the text
+        cex.names = 0.8, ##cex makes text size smaller 
+        ylab = "% Lot Brand",
+        main = "Brands by Lot (%)")
+legend (x="topright", inset = c(-0.17, 0), ## negative pushes it outside of box
+        legend = colnames(carpercent),
+        fill = rainbow(ncol(carpercent)),
+        title = "Brand",
+        cex = 0.6,
+        xpd = TRUE)
+
+##One group, Alyssa and Danielle, saw way more toyota than the rest of the groups 
+##More Toyota were seen in the SCB lot than anywhere else, then an Nissan and Honda in the middle ground, with a low distribution of most other car brands everywhere 
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
