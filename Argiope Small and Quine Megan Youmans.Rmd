@@ -1,0 +1,89 @@
+---
+title: "Argiope Small and Quine Megan Youmans"
+output:
+  word_document: default
+  html_document: default
+date: "2026-09-22"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+spiders <- read.csv('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Datasets 2/Argiope_fertilization_small.csv')
+
+##SMALL ARGIOPE DATA SET 
+
+quine <- read.csv('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Datasets 2/quine.csv')
+
+## QUINE DATA SET 
+
+
+```
+
+## Argiope 
+
+For the Agriope small fertilization dataset, do multivariate linear models to
+test if copulation insertion duration correlates to the number of fertilized eggs.
+To do this assessment of male fertility, we must also account for male size, female size, eggs
+laid, and egg sacs produced
+
+
+```{r agriope}
+summary(spiders)
+
+spiderlm <- lm(data=spiders, spiders$NumFertilized ~ spiders$InsertionDuration + spiders$MaleSize + spiders$FemaleSize + spiders$NumSacs + spiders$NumEggs)
+summary(spiderlm)
+
+```
+
+## Significant p-values notes for number of eggs correlating to number of eggs fertilized, as well as inderstion duration to number of eggs fertilized. Therefore we can assume that if a spider female has more eggs, and the insertion duration for the male is lnog that there is a likelihood of a higher number of eggs being fertilized. 
+
+
+
+```
+
+```
+
+
+## Quine
+
+do multivariate categorical ANOVAs and Tukey’s
+Honest Significant Differences tests to determine if the number of days absent is predicted by
+Ethnicity, Sex, Age, or Learner Status
+
+
+```{r quine, echo=FALSE}
+summary(quine)
+
+library(ggplot2)
+
+ggplot(quine) + aes(x = Sex, y = Days, fill = Eth) + geom_boxplot()
+
+ggplot(quine) + aes(x = Sex, y = Days, fill = Age) + geom_boxplot()
+
+ggplot(quine) + aes(x = Sex, y = Days, fill = Lrn) + geom_boxplot()
+
+mod <- aov(quine$Days ~ quine$Eth + quine$Sex + quine$Age + quine$Lrn)
+summary(mod)
+
+ggplot(quine) + aes(x = Age, y = Days, fill = Eth) + geom_boxplot()
+
+##p-values for Ethnicity and age showing strong correlations respectively for how many days absent where Eth "A" and older age show a higher correlation of missing days in school, although Eth "N" has outliers to the norm as well. 
+
+mod <- aov(quine$Days ~ quine$Eth + quine$Sex + quine$Age + quine$Lrn)
+summary(mod)
+##Tukey test, using aov(), comparison of means for confidence levels
+TukeyHSD(mod)
+
+##p adjusted for Eth is 0.0004658
+##P sex adjusted is not significant, gender was not a major influence on missing days
+##P value for F2-F1 value is 0.045, slightly older in age is significant for missing days versus other age groups
+##P value for learner status is not significant for missing days 
+
+##Ethnicity differences played a role in students missing school days, as well as age groups F2 and F1 age groups were more significant for missing days than other students. 
+
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
