@@ -1,0 +1,49 @@
+---
+title: "Cell Inhibition Megan Youmans"
+output: html_document
+date: "2026-09-25"
+---
+
+
+```{r cells}
+
+library(ggplot2)
+
+cells <- read.csv('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Datasets 2/Datasets/Cell_Inhibition_Schoenfeld.csv')
+
+summary(cells)
+
+##Inhibitor, Assay, Cell.line, VHL, Replicate., Condentration.uM, PercentSurvival 
+
+cellslm <- lm(data=cells, cells$PercentSurvival ~ cells$Inhibitor + cells$Assay + cells$Cell.Line + cells$VHL + cells$Replicate. + cells$Concentration.uM)
+summary(cellslm)
+
+str(cells)
+
+concentrate <- as.factor(cells$Concentration.uM)
+
+cellsmod <- aov(cells$PercentSurvival ~ cells$Inhibitor + cells$Assay + cells$Cell.Line + cells$VHL + concentrate)
+
+summary(cellsmod)
+
+TukeyHSD(cellsmod) 
+
+cellstukey <- TukeyHSD(cellsmod)
+cellstukey$concentrate
+
+cellsmod2 <- aov(cells$PercentSurvival ~ concentrate + cells$Inhibitor + cells$Assay + cells$Cell.Line + cells$VHL)
+summary(cellsmod2)
+
+TukeyHSD(cellsmod2)
+
+
+ggplot(cells) + aes(x = PercentSurvival, y = concentrate, fill = Assay) + geom_boxplot()
+
+ggplot(cells) + aes(x= PercentSurvival, y=concentrate, fill = VHL) + geom_boxplot()
+
+##Results
+
+##Concentration of the solution played a significant role in cell percent survival, especially at 20-4 concentration levels. Cell percent survival was less at higher concentration levels. 
+
+```
+
