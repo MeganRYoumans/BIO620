@@ -1,0 +1,86 @@
+---
+title: "Isolation Megan Youmans"
+output: html_document
+date: "2026-09-29"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r birds}
+
+birds <- read.csv('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Datasets 2/Datasets/Isolation.csv')
+library(AICcmodavg)
+library(ggplot2)
+summary(birds)
+
+##indicence, area, isolation 
+
+bird1 <- lm(birds$incidence ~ 1)
+bird2 <- lm(birds$incidence ~ birds$area)
+bird3 <- lm(birds$incidence ~ birds$isolation)
+bird4 <- lm(birds$incidence ~ birds$area * birds$isolation)
+bird5 <- lm(birds$incidence ~ birds$area + birds$isolation)
+
+AICc(bird1)
+AICc(bird2)
+AICc(bird3)
+AICc(bird4)
+AICc(bird5)
+
+##[1] 75.53779
+##[1] 59.49274
+##[1] 45.55016
+##[1] 38.92573
+##[1] 39.21524
+
+##Bird4 looks to be the best fit model with the lowest AICc number of the tests.
+
+AICc(bird1) - AICc(bird4)
+AICc(bird2) - AICc(bird4)
+AICc(bird3) - AICc(bird4)
+AICc(bird4) - AICc(bird4)
+AICc(bird5) - AICc(bird4)
+
+##[1] 36.61206
+##[1] 20.56701
+##[1] 6.624427
+##[1] 0
+##[1] 0.2895125
+
+##bird4 followed by bird 5 are the best fit models for this data set as they are closest to 0, followed by bird 3. 
+
+delta1 <- AICc(bird1) - AICc(bird4)
+delta2 <- AICc(bird2) - AICc(bird4)
+delta3 <- AICc(bird3) - AICc(bird4)
+delta4 <- AICc(bird4) - AICc(bird4)
+delta5 <- AICc(bird5) - AICc(bird4)
+
+summary(bird4)
+summary(bird5)
+
+par(mfrow = c(1,2)) ##set up the stwo side by side plots 
+boxplot(birds$area,birds$incidence, data = birds, xlab = "incidence", ylab="area")
+boxplot(birds$isolation,birds$incidence, data = birds, xlab="incidence", ylab="isolation")
+
+birdplot <- glm(incidence ~ area * isolation, family = binomial, data = birds)
+
+plot(birds$area, birds$incidence,
+     xlab="Area",
+     ylab="Incidence",
+    main="Regression Curve", pch = 16, col = "blue")
+
+ggplot(birds, aes(x=birds$area, y=birds$incidence)) +
+  geom_point(alpha = 0.5, position = position_jitter(height = 0.02)) + ##jitter keeps points slightly separate
+  geom_smooth(method = "glm", method.args = list(family = "binomial"), se = TRUE) +
+  labs(title = "Regression Curve",
+         x="Area",
+       y="Incidence")+
+  theme_minimal() ##removes a checkered background to be more visually appealing
+
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

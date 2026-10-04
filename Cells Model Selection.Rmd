@@ -1,0 +1,102 @@
+---
+title: "Cells Model Selection Megan Youmans"
+output:
+  html_document: default
+  word_document: default
+date: "2026-09-29"
+---
+
+
+```{r cells}
+
+library(AICcmodavg)
+
+library(ggplot2)
+
+cells <- read.csv('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Datasets 2/Datasets/Cell_Inhibition_Schoenfeld.csv')
+
+summary(cells)
+
+##Perform model selection
+##Inhibitor, Cell Line, VHL status, Concentrations of inhibitor, on Percent Survival 
+
+mod <- lm(cells$PercentSurvival ~ cells$Inhibitor)
+mod2 <- lm(cells$PercentSurvival ~ cells$Inhibitor * cells$Cell.Line)
+mod3 <- lm(cells$PercentSurvival ~ cells$Inhibitor * cells$VHL)
+mod4 <- lm(cells$PercentSurvival ~ cells$Inhibitor * cells$Concentration.uM)
+mod5 <- lm(cells$PercentSurvival ~ cells$Cell.Line)
+mod6 <- lm(cells$PercentSurvival ~ cells$VHL)
+mod7 <- lm(cells$PercentSurvival ~ cells$Concentration.uM)
+mod8 <- lm(cells$PercentSurvival ~ cells$Inhibitor * cells$Cell.Line * cells$VHL)
+mod9 <- lm(cells$PercentSurvival ~ cells$Inhibitor * cells$Concentration.uM * cells$Cell.Line)
+mod10 <- lm(cells$PercentSurvival ~ cells$Inhibitor * cells$Concentration * cells$VHL)
+modint <- lm(cells$PercentSurvival ~ 1)
+
+AICc(mod)
+AICc(mod2)
+AICc(mod3)
+AICc(mod4)
+AICc(mod5)
+AICc(mod6)
+AICc(mod7)
+AICc(mod8)
+AICc(mod9)
+AICc(mod10)
+AICc(modint)
+
+##MOD 10 is lowest number for AICc 3897.705
+
+summary(mod10)
+
+summary(modint)
+##Residuals:
+##    Min      1Q  Median      3Q     Max 
+##-65.371 -47.431  -4.231  32.344 290.569 
+
+##Coefficients:
+##            Estimate Std. Error t value Pr(>|t|)    
+##(Intercept)   68.431      2.713   25.23   <2e-16 ***
+
+
+##Calculate delta AICc - difference between minimum AICc best model, and the current model you're looking at 
+
+AICc(mod) - AICc(mod10)
+AICc(mod2) - AICc(mod10)
+AICc(mod3) - AICc(mod10)
+AICc(mod4) - AICc(mod10)
+AICc(mod5) - AICc(mod10)
+AICc(mod6) - AICc(mod10)
+AICc(mod7) - AICc(mod10)
+AICc(mod9) - AICc(mod10)
+AICc(mod8) - AICc(mod10)
+AICc(mod10) - AICc(mod10)
+AICc(modint) - AICc(mod10)
+
+##[1] 238.2
+##[1] 236.9157
+##[1] 233.6646
+##[1] 8.456782
+##[1] 248.5579
+##[1] 245.5506
+##[1] 23.20539
+##[1] 6.227913
+##[1] 233.392
+##[1] 0
+##[1] 246.5281
+
+
+summary(mod10)
+plot(mod10)
+
+##Residual standard error: 38.19 on 376 degrees of freedom
+##Multiple R-squared:  0.4932,	Adjusted R-squared:  0.4838 
+##F-statistic: 52.27 on 7 and 376 DF,  p-value: < 2.2e-16
+
+##Best models according to delta after model 10 are 8 and 4 to explain the data relationship to the Percent Survival of cells
+
+##I reviewed the models in order of variations from the given data and added predictors randomly. 
+
+##Model 10 has a p value significantly below zero indicating a relationship between the features of cell percent survival relating to inhibitor, concentration and the cell line. 
+
+```
+
