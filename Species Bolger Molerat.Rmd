@@ -1,0 +1,239 @@
+---
+title: "Species Bolger Molerat HW 7 Megan Youmans"
+output:
+  html_document: default
+  word_document: default
+date: "2026-10-06"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Datasets
+
+```{r datasets }
+
+library(ggplot2)
+library(AICcmodavg)
+
+species <- read.csv('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Datasets 2/Datasets/species.csv')
+bolger <- read.csv('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Datasets 2/Datasets/bolger.csv')
+molerat <- read.csv('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Datasets 2/Datasets/molerat.csv')
+
+```
+
+## Species Poisson GLM and model selection 
+
+
+```{r , echo=FALSE}
+
+summary(species)
+##pH (categorical), Biomass (numerical), Species (numerical)
+
+species.glm <- glm(Species ~ Biomass, data = species, family = poisson)
+
+anova(species.glm)
+anova(species.glm, test = "Chisq")
+
+
+##        Df Deviance Resid. Df Resid. Dev  Pr(>Chi)    
+##NULL                       89     452.35              
+##Biomass  1   44.673        88     407.67 2.328e-11 ***
+##---
+##Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1'
+
+
+summary(species.glm)
+
+##Coefficients:
+##             Estimate Std. Error z value Pr(>|z|)    
+##(Intercept)  3.184094   0.039159   81.31  < 2e-16 ***
+##Biomass     -0.064441   0.009838   -6.55 5.74e-11 ***
+
+speciesph <- factor(species$pH, levels = c("low", "mid", "high"))
+##make ph a factor to utilize 
+
+ggplot(species, aes(Biomass,Species, color = speciesph)) + geom_point()
+
+##model selection
+
+s1 <- lm(species$Species ~ 1, family = poisson, data = species)
+s2 <- lm(species$Species ~ species$Biomass,family = poisson, data = species)
+s3 <- lm(species$Species ~ species$pH,family = poisson, data = species)
+s4 <- lm(species$Species ~ species$Biomass * species$pH,family = poisson, data = species)
+s5 <- lm(species$Species ~ species$Biomass + species$pH,family = poisson, data = species)
+
+AICc(s1)
+AICc(s2)
+AICc(s3)
+AICc(s4)
+AICc(s5)
+
+##[1] 667.1396
+##[1] 659.7421
+##[1] 622.5944
+##[1] 505.7315
+##[1] 501.5387
+
+##Model 5 is the lowest AICc number so it is the best fit 
+
+summary(s5)
+
+##Residuals:
+##   Min     1Q Median     3Q    Max 
+##-8.965 -2.693  0.062  2.171 15.508 
+
+##Coefficients:
+##                Estimate Std. Error t value Pr(>|t|)    
+##(Intercept)      40.2449     1.0923   36.84   <2e-16 ***
+##species$Biomass  -2.7276     0.1717  -15.89   <2e-16 ***
+##species$pHlow   -22.6200     1.0818  -20.91   <2e-16 ***
+##species$pHmid   -10.6418     1.0063  -10.57   <2e-16 ***
+##---
+##Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+##Residual standard error: 3.783 on 86 degrees of freedom
+##Multiple R-squared:  0.8524,	Adjusted R-squared:  0.8472 
+##F-statistic: 165.5 on 3 and 86 DF,  p-value: < 2.2e-16
+
+plot(s5)
+
+spred <- predict(s5, type = "response")
+ggplot(species, aes(x = species$Biomass, y = species$Species, color = species$pH)) + geom_point() + geom_line(aes(y=spred))
+
+## Species biomass decreases typically alongside pH increasing, across all three species data sets. 
+
+
+```
+
+## Bolger Regression and Model Selection 
+
+```{r , echo=FALSE}
+
+summary(bolger)
+
+##PERSHRUB (numerical), DISTX (numerical), AGE (numerical), RODENTSP (yes no numerical binary)
+
+cor(bolger[,1:3]) ##quick correlation matrix 
+##not sure if the larger or smaller number is better here... probably the larger negative because it's farther away from 1.0? 
+
+b1 <- glm(bolger$RODENTSP ~ 1, family = "binomial", data = bolger)
+b2 <- glm(bolger$RODENTSP ~ bolger$PERSHRUB,family = "binomial", data = bolger)
+b3 <- glm(bolger$RODENTSP ~ bolger$AGE,family = "binomial", data = bolger)
+b4 <- glm(bolger$RODENTSP ~ bolger$DISTX,family = "binomial", data = bolger)
+b5 <- glm(bolger$RODENTSP ~ bolger$PERSHRUB * bolger$AGE,family = "binomial", data = bolger)
+b6 <- glm(bolger$RODENTSP ~ bolger$PERSHRUB + bolger$AGE,family = "binomial", data = bolger)
+b7 <- glm(bolger$RODENTSP ~ bolger$PERSHRUB * bolger$DISTX,family = "binomial", data = bolger)
+b8 <- glm(bolger$RODENTSP ~ bolger$PERSHRUB + bolger$DISTX,family = "binomial", data = bolger)
+b9 <- glm(bolger$RODENTSP ~ bolger$PERSHRUB * bolger$AGE * bolger$DISTX,family = "binomial", data = bolger)
+b10 <- glm(bolger$RODENTSP ~ bolger$PERSHRUB + bolger$AGE + bolger$DISTX,family = "binomial", data = bolger)
+
+AIC(b1)
+AIC(b2)
+AIC(b3)
+AIC(b4)
+AIC(b5)
+AIC(b6)
+AIC(b7)
+AIC(b8)
+AIC(b9)
+AIC(b10)
+
+##b2 folloed by b6 are best models
+
+
+summary(b2)
+
+##Coefficients:
+##                Estimate Std. Error t value Pr(>|t|)    
+##(Intercept)     -0.116055   0.149728  -0.775 0.446172    
+##bolger$PERSHRUB  0.012135   0.002636   4.603 0.000125 ***
+##---
+##Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+##
+##(Dispersion parameter for gaussian family taken to be 0.1412207)
+##
+##    Null deviance: 6.2400  on 24  degrees of freedom
+##Residual deviance: 3.2481  on 23  degrees of freedom
+##AIC: 25.927
+##
+##Number of Fisher Scoring iterations: 2
+
+b2 <- glm(bolger$RODENTSP ~ bolger$PERSHRUB, family = binomial, data=bolger)
+
+bpred <- predict(b2, type = "response")
+ggplot(bolger, aes(x = PERSHRUB, y = RODENTSP,  ylab = "Rodent Present", xlab = "Per Shrub")) + geom_point() + geom_line(aes(y=bpred), color = "blue")
+
+##Bolger was present yes or no based on number of shrubs, more likely to have been yes, found, at higher per shrub counts. 
+
+```
+
+## Molerat GammaGLM 
+
+```{r , echo=FALSE}
+
+summary(molerat)
+show(molerat)
+
+## caste (categorical), lnmass (numerical), lnenergy (numerical)
+
+moleratcaste <- factor(molerat$caste, levels = "worker", "lazy")
+
+hist(molerat$lnenergy)
+hist(molerat$lnmass)
+
+ggplot(molerat, aes(molerat$lnmass, molerat$lnenergy, color = molerat$caste)) + geom_point()
+
+##Larger molerat mass trends to being lazy rather than a worker 
+
+gamma <- Gamma(link = "log")
+##use a log link
+
+m1 <- glm(molerat$lnenergy ~ 1, family = Gamma(link = "log"))
+m2 <- glm(molerat$lnenergy ~ molerat$lnmass,family = Gamma(link = "log"))
+m3 <- glm(molerat$lnenergy ~ molerat$caste,family = Gamma(link = "log"))
+m4 <- glm(molerat$lnenergy ~ molerat$lnmass * molerat$caste,family = Gamma(link = "log"))
+m5 <- glm(molerat$lnenergy ~ molerat$lnmass + molerat$caste,family = Gamma(link = "log"))
+
+AIC(m1)
+AIC(m2)
+AIC(m3)
+AIC(m4)
+AIC(m5)
+
+##[1] 33.04415
+##[1] 23.57633
+##[1] 34.54878
+##[1] 19.83
+##[1] 18.79253
+
+##Model 5 is best with lowest number, followed by 4
+
+summary(m5)
+
+##Coefficients:
+##                    Estimate Std. Error t value Pr(>|t|)    
+##(Intercept)         -0.09687    0.94230  -0.103   0.9188    
+##molerat$lnmass       0.89282    0.19303   4.625 5.89e-05 ***
+##molerat$casteworker  0.39334    0.14611   2.692   0.0112 *  
+##---
+##Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+##
+##(Dispersion parameter for gaussian family taken to be 0.08795314)
+##
+##    Null deviance: 4.7626  on 34  degrees of freedom
+##Residual deviance: 2.8145  on 32  degrees of freedom
+##AIC: 19.106
+##Number of Fisher Scoring iterations: 2
+
+moleratpred <- predict(m5, type = "response")
+ggplot(molerat, aes(molerat$lnmass, molerat$lnenergy, color = molerat$caste)) + geom_point() + geom_line(aes(y=moleratpred))
+
+##Energy in molerats increases as mass increases, but also as mass increases the likelihood that the molerat is lazy increases, as higher mass correlates to lazyness despite higher energy 
+
+```
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+
