@@ -1,0 +1,54 @@
+---
+title: "Group Assignment HW 8"
+output: html_document
+date: "2026-10-23"
+---
+
+```{r fish}
+
+library(fishtree)
+
+burrowingverts <- c("Anoplarchus insignis", "Anoplarchus purpurescens", "Xiphister mucosus", "Xiphister atropurpureus", "Apodichthys flavidus") 
+##Laura's data 
+## Xiphister atropurpureus potentially not loading?  
+summary(burrowingverts)
+str(burrowingverts)
+
+fishtree <- fishtree_phylogeny(species = burrowingverts, type = "phylogram_mrca")
+plot(fishtree) 
+
+#Xiphister atropurpureus is missing from the tree, Laura mentioned this to add it 
+
+completetree <- fishtree_complete_phylogeny(species = c("Anoplarchus insignis", "Anoplarchus purpurescens", "Xiphister mucosus", "Xiphister atropurpureus", "Apodichthys flavidus"))
+
+fishtree <- consensus.edges(completetree)
+plot(fishtree)
+
+#load in spreadsheet from Laura for linear vertebral morphometrics 
+fishmorpho <- read_excel('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Assignments/HW 8/fishmorpho.xlsx') 
+
+
+#Accodring to Laura, gls() handles one row per species (not multiple individuals or verts per individual. Need to simplify here.)
+
+##narrow down to a percent, we chose 15% 
+fishmorpho <- fishmorpho[fishmorpho$Percent == "15", ] 
+fishdata <- fishmorpho %>%
+  group_by(Species) %>%
+  summarise(across(where(is.numeric), \(x) mean(x, na.rm = TRUE))) 
+#species averages in the columns
+rownames(fishdata) <- fishdata$Species
+name.check(fishtree, fishdata)
+
+##From Laura
+fishmodel <- gls(NeuralLen ~ CentL, data = fishdata, correlation = corBrownian(1, fishtree, form = ~ Species),  na.action = na.omit)
+summary(fishmodel)
+
+##Fall colors for the season
+
+plot(fishdata$CentL, fishdata$NeuralLen, col = c("#D4986A", "#D38D71","#E2D78F","#DE6E73", "#E05E78"), pch = 20, xlab= "Centrum Length", ylab = "Neural Spine Length", cex = 3)
+legend("topright", legend = c("Anoplarchus insignis", "Anoplarchus purpurescens", "Apodichthys flavidus", "Xiphister atropurpureus", "Xiphister mucosus"), col = c("#D4986A", "#D38D71","#E2D78F","#DE6E73", "#E05E78"), pch = 20)
+
+##Most species show a corelation between neutral spine length and centrum length, as centrum length increases, spine length increases, except for the outlier of Apodichthys flavidus which has the highest spine length and the shortest centrum length. 
+
+```
+```

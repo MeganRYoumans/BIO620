@@ -1,0 +1,105 @@
+---
+title: "AVONET"
+output:
+  html_document: default
+  word_document: default
+date: "2026-10-20"
+---
+
+
+```{r}
+
+library(ape)
+library(phytools)
+library(geiger)
+library(nlme)
+library(caper)
+
+trees_file <- '/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Assignments/HW 8/tree-pruner-67ce5eb0-b7df-4525-8a8f-56929bff3cfc/output.nex'
+trees <- read.nexus(trees_file)
+consensus_tree <- ls.consensus(trees, rooted = T)
+plot(consensus_tree)
+
+trait_data <- read.csv('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Assignments/HW 8/ELEData/TraitData/AVONET3_BirdTree_CSV.csv')
+trait_data$Species3 <- gsub(" ","_",trait_data$Species3)
+rownames(trait_data) <- trait_data$Species3
+name.check(consensus_tree, trait_data)
+
+##Make a version of the species data that only has the tip labels on the consensus tree data 
+
+traitsclean <- trait_data[trait_data$Species3 %in% consensus_tree$tip.label, ]
+
+##we only want the 50 birds from the data set, not the 10,000 birds showing, so get rid of the rest - not drop tip 
+##take speceies we want and all data set species and then filter - filter on rows [row,column] 
+##we want species that we want only, that are in species on trait 
+
+name.check(consensus_tree, traitsclean)
+
+
+print(traitsclean)
+
+##PGLS sorting 
+## phylogenetic generalized least squares (PGLS) 
+
+##have to transfer data wing and tail length to numeric 
+traitsclean$Wing.Length <- as.numeric(traitsclean$Wing.Length)
+traitsclean$Tail.Length <- as.numeric(traitsclean$Tail.Length)
+##have to load a library nlme for gls to work first) 
+
+bm <- corBrownian(1, phy = consensus_tree, form = ~Species3)
+
+modelo1 <- gls(Wing.Length ~ Tail.Length, data = traitsclean, correlation = bm)
+summary(modelo1)
+
+##AIC of 520.4662
+##tvalue of tail length 3.63, intercept 6.41, pvalue highly negative 
+
+modelo2 <- gls(Wing.Length ~ Tail.Length, data = traitsclean, correlation = corPagel(1, phy = consensus_tree, form = ~Species3))
+summary(modelo2)
+##AIC of 514.813
+##tvalue of tail length 3.46, intercept 6.36, pvalue 0.0011
+
+
+modelo3 <- gls(Wing.Length ~ Tail.Length + Mass, data = traitsclean, correlation = corPagel(1, phy = consensus_tree, form = ~Species3))
+summary(modelo3)
+
+##AIC of 526.1036
+##tvalue of tail length 1.08, pvalue 0.2825
+##tvalue of mass 1.67, pvalue 0.1010
+
+##bird wings are slightly correlated in size to bird mass size 
+
+##Install caper package and load 
+
+traits_small <- traitsclean[, c("Species3", "Wing.Length", "Tail.Length", "Mass")]
+summary(traits_small)
+comp.data<-comparative.data(consensus_tree, traits_small, names.col="Species3", vcv.dim=2, warn.dropped=TRUE)
+summary(comp.data)
+
+modelo4<-pgls(Wing.Length ~ Tail.Length, data = comp.data, lambda = "ML")
+summary(modelo4)
+
+##p-value: 0.0006852
+
+modelo5<-pgls(Wing.Length ~ Tail.Length + Mass, data=comp.data, lambda="ML")
+summary(modelo5)
+
+##p-value = 0.000914
+
+modelo6<-pgls(traitsclean$Tarsus.Length~ Wing.Length, data=comp.data, lambda="ML")
+summary(modelo6)
+
+##p-value = 0.618 
+
+lm.lk<-pgls.profile(modelo6, which="lambda")
+plot(lm.lk)
+
+
+##Species share traits through common ancestry... Looking for shared trait values on the tree. Length of tarsus tail relates to wing length in birds. 
+
+
+
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
