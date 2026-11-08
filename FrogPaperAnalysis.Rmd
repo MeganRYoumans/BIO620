@@ -1,0 +1,567 @@
+---
+title: "Frog Paper Analysis"
+output:
+  html_document: default
+  word_document: default
+date: "2026-10-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Larger frogs are better mimics but are more risk-averse in a nontoxic poison frog 
+
+● What, if any, is their experimental design?
+  The experimenters were looking at poison frogs and a mimic nontoxic frog to see behavioral differences. They caught 95 frogs in the field in Ecuador and did a behavioral experiment on them in the lab. They checked each frogs color and mimic color. Each frog was photographed and measured and was also tested for how they behaved in a novel environment to see how bold the frogs were, at different times of day. They measured the frogs activity and hesitancy to enter the environment under different light conditions and analyzed the behavior with R. 
+   
+● What, if any, statistical analyses did they perform?
+  The frogs were measured using Generalized additive models (GAM's). They also checked for errors with Gaussian and Binomial checks. 
+  The fixed responses were the environment, time of day and light 
+  The random responses were the frogs themselves 
+
+● What, if any, data validation techniques did they use? For example, if they used linear
+models, did they test for normality?
+  They assessed GAM fit and resudials and checked collinearity. They also did log transforming for the frogs amount of jumps per minute. They examined interaction factors using ANOVA. 
+
+● Are there any other techniques we’ve discussed that they used (e.g., imputation, MICE,
+etc.)?
+  It seems they used many of the techniques that we have used in class such as GLMs, ANOVA testing, and ggplot. 
+
+● Do you have any other questions or comments about the paper?
+  They didn't measure sex of the frogs which could possibly have an effect on behavior
+  The environment was made in a lab rather than observed in the field
+  I'm not sure why they fully excluded frogs who did not enter the environment when that could have potentially been used as data to back up the argument of was not bold enough in behavior? 
+  
+
+```{r }
+## Frog Data set for level of boldness of frog based on real toxicity versus mimicry 
+
+##Packages from paper used
+library(tidyverse) # Organizing the data
+library(mgcv) # Analyzing the data with generalized additive model (GAMs)
+library(tidygam) # Plotting the GAM prediction
+library(ggplot2) # Plotting the data
+library(patchwork) # Combining plots into a multifaceted figure
+
+
+behavior <- read.csv('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Assignments/HW 9/doi_10_5061_dryad_905qfttxx__v20250922/McEwen-etal-2025_BehaviourData.csv', stringsAsFactors = T)
+light <- read.csv('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Assignments/HW 9/doi_10_5061_dryad_905qfttxx__v20250922/McEwen-etal-2025_LightEnvironment.csv', stringsAsFactors = T)
+
+summary(behavior)
+str(behavior)
+summary(light)
+str(light)
+
+##Change catagorical into factors 
+behavior$LightTmnt <- as.factor(behavior$LightTmnt)
+behavior$FocalFrog <- as.factor(behavior$FocalFrog)
+light$Habitat <- as.factor(light$Habitat)
+
+##remove missing data sets 
+
+behavior_clean <- subset(behavior, !is.na(SPMT))
+behavior_clean <- subset(behavior, !is.na(JPMT))
+
+##select just the specific variables from the data we are looking at for the initial color contrast analysis as per the paper 
+## I have an additional whole data version below also 
+
+
+##FocalFrog = code for each individual frog
+##vids = code to each video file
+##SVL = body length of each frog in mm 
+##DorsalColJND = chromatic contrast hue
+##DorsalLumJND = acrhomatic contrast brightness 
+
+beh <- behavior %>% 
+  dplyr::select(FocalFrog, vids, SVL, DorsalColJND, DorsalLumJND) ##had to force dplyr to get it to select properly here 
+
+
+##Paper corrects for selecting just one copy of data per individual frog as original data has multiple data sources with multiple rows for each frog. 
+
+single.SVL.constrastvals <- beh %>% group_by(FocalFrog) %>% slice_min(order_by = vids)
+
+## turn into a data frame to then we can visualize the update 
+
+single.SVL.constrastvals <- as.data.frame(single.SVL.constrastvals)
+nrow(single.SVL.constrastvals)
+## shows 90 entries
+nlevels(single.SVL.constrastvals$FocalFrog)
+## also shows 90 entries 
+
+
+##Adding another clean value for data set for 90 frogs to update original code tests
+
+secondary.vals <- behavior_clean %>% group_by(FocalFrog) %>% slice_min(order_by = vids)
+
+```
+
+
+```{r }
+
+##Plots
+
+##Had to go back and update my code to account for the updated 90 frog count data change = secondary.vals 
+
+summary(secondary.vals$SPMT) ##squares crossed per min?
+summary(secondary.vals$JPMT) ##jumps per min?
+
+hist(secondary.vals$SPMT)
+hist(secondary.vals$JPMT)
+hist(secondary.vals$EntryLatency)
+
+boxplot(SPMT ~ LightTmnt, data = secondary.vals)
+boxplot(SPMT ~ LightTmnt, data = secondary.vals, main = "Activity of Frog by Light Variation", ylab = "Squares crossed per min", xlab = "Light Treatment")
+boxplot(JPMT ~ LightTmnt, data = secondary.vals, main = "Activity of Frog by Light Variation", ylab = "Jumps per min", xlab = "Light Treatment")
+
+boxplot(JPMT ~ TimeOfDay + LightTmnt, data = secondary.vals, log = "y", xlab = "", ylab = "Jumps/min scaled log", col = 1:4)
+
+
+lm_col <- lm(secondary.vals$DorsalColJND ~ SVL, data = secondary.vals)
+summary(lm_col)
+plot(lm_col)
+
+par(mfrow = c(1,1))
+shapiro.test(resid(lm_col))
+## p value 4.825e-05
+
+
+library("corrplot")
+numeric <- behavior[, c("SVL", "EntryLatency", "SPMT", "JPMT", "DorsalColJND", "DorsalLumJND")]
+cor_matrix <- cor(numeric, use = "pairwise.complete.obs")
+##round decimal points 
+round(cor_matrix, 2)
+corrplot(cor_matrix, method = "circle", type = "upper", tl.col = "black")
+
+##DorsalColJND slight map to JPMT, DorsalColJND correlated to DorsalLumJND
+##Not really seeing much correlation here 
+
+##Keeping the original data from behavior over the 90 frog clean data since there were multiple measurements here per frog which make up the data
+
+m1  <- glm(entry ~ 1, family = binomial, data = behavior)
+m2  <- glm(entry ~ LightTmnt, family = binomial, data = behavior)
+m3  <- glm(entry ~ SVL, family = binomial, data = behavior)
+m4  <- glm(entry ~ TimeOfDay, family = binomial, data = behavior)
+m5  <- glm(entry ~ LightTmnt * SVL, family = binomial, data = behavior)
+m6  <- glm(entry ~ LightTmnt + SVL, family = binomial, data = behavior)
+m7  <- glm(entry ~ LightTmnt * TimeOfDay, family = binomial, data = behavior)
+m8  <- glm(entry ~ LightTmnt + TimeOfDay, family = binomial, data = behavior)
+m9  <- glm(entry ~ LightTmnt * SVL * TimeOfDay, family = binomial, data = behavior)
+m10 <- glm(entry ~ LightTmnt + SVL + TimeOfDay, family = binomial, data = behavior)
+
+AIC(m1, m2, m3, m4, m5, m6, m7, m8, m9, m10)
+
+##m10 has lowest AIC at 272.9005 
+
+pred <- predict(m10, type = "response")
+ggplot(behavior, aes(x = LightTmnt, y = entry,  ylab = "Entry", xlab = "Light")) + geom_point() + geom_line(aes(y=pred), color = "blue")
+
+library(lme4)
+frograndom <- glmer(entry ~ LightTmnt + SVL + TimeOfDay + (1 | FocalFrog), family = binomial, data = behavior)
+summary(frograndom)
+
+##Fixed effects:
+##                 Estimate Std. Error z value Pr(>|z|)    
+##(Intercept)       4.37352    1.02681   4.259 2.05e-05 ***
+##LightTmntLight    0.53550    0.33375   1.604 0.108605    
+##SVL              -0.19267    0.05841  -3.299 0.000972 ***
+##TimeOfDayMorning  1.24037    0.36066   3.439 0.000584 ***
+
+
+
+```
+
+
+
+```{r }
+
+##Plots 2 
+
+##Figure 2 Contrast
+
+library("mgcv") ##for gam 
+
+
+## Chromatic - original code before I fixed the above counts for counting 90 individual frogs only 
+
+frogcolor <- gam(DorsalColJND ~ s(SVL), family = gaussian, data = behavior, method = "REML")
+summary(frogcolor)
+
+ggplot(behavior, aes( x = SVL, y = DorsalColJND)) + 
+  geom_point(alpha = 0.5, color = "green", size = 1) + 
+  geom_smooth(method = "gam", formula = y ~ s(x), color = "blue", fill = "red") +
+  labs (
+    title = "Visual contrast of Dorsal color to SVL",
+    x = "SVL",
+    y = "Chromatic contrast"
+  )
+
+## Chromatic - updated after fixing for just 90 frogs 
+
+frogcolor <- gam(DorsalColJND ~ s(SVL), family = gaussian, data = single.SVL.constrastvals, method = "REML")
+summary(frogcolor)
+
+ggplot(single.SVL.constrastvals, aes(x = SVL, y = DorsalColJND)) + ##utilize new single contrast vals for the 90 frogs
+  geom_point(alpha = 0.5, color = "green", size = 1) + 
+  geom_smooth(method = "gam", formula = y ~ s(x), 
+              method.args = list(method = "REML"), ## add argument method to adjust for the wonkyness of the line plot
+              color = "blue", fill = "red") +
+  labs (
+    title = "Visual contrast of Dorsal color to SVL",
+    x = "SVL",
+    y = "Chromatic contrast"
+  )
+
+
+
+## Achromatic - not sure why the Lum graph is wonky here 
+
+froglum <- gam(DorsalLumJND ~ s(SVL), family = gaussian, data = single.SVL.constrastvals)
+summary(froglum)
+
+ggplot(single.SVL.constrastvals, aes( x = SVL, y = DorsalLumJND)) + 
+  geom_point(alpha = 0.5, color = "green", size = 1) + 
+  geom_smooth(method = "gam", formula = y ~ s(x), 
+              method.args = list(method = "REML"),
+              color = "blue", fill = "red") +
+  labs (
+    title = "Visual contrast of Dorsal color to SVL",
+    x = "SVL",
+    y = "Achromatic contrast"
+  )
+
+
+## Archomatic fixed with updated 90 frog count 
+
+froglum <- gam(DorsalLumJND ~ s(SVL), family = gaussian, data = behavior)
+summary(froglum)
+
+ggplot(behavior_clean, aes( x = SVL, y = DorsalLumJND)) + 
+  geom_point(alpha = 0.5, color = "green", size = 1) + 
+  geom_smooth(method = "gam", formula = y ~ s(x), color = "blue", fill = "red") +
+  labs (
+    title = "Visual contrast of Dorsal color to SVL",
+    x = "SVL",
+    y = "Achromatic contrast"
+  )
+
+
+
+## Example of what the paper did, chromatic 
+
+ggplot(data = single.SVL.constrastvals) + ##using the 90 frog data only
+  geom_point(aes(x = SVL, y = DorsalColJND)) +
+  theme_bw() + ## black and white theme 
+  theme(panel.grid.major = element_blank()) + ##removes grid lines
+  theme(panel.grid.minor = element_blank()) + ##also removes grid lines
+  ylab ("Chromatic contrast (dS)") +
+  xlab ("Frog size (SVL mm)") +
+  theme(legend.title = element_blank()) + ## no title or legend
+  theme(legend.background = element_rect(linetype="solid", colour ="black"))
+
+```
+
+
+```{r}
+
+##Analysis of the plots above as per the paper 
+
+##Analyze the relationship between color contrast and body size using GAMs
+
+gamdorsalcol <- gam(DorsalColJND ~ s(SVL), ##smoothing SVL
+                    data = single.SVL.constrastvals, ##90 frog data
+                    family = gaussian, ##not binomial here
+                    method = "REML")
+
+gam.check(gamdorsalcol)
+##p value is 0.58, larger than 0.05 so not significant
+##Apparently this means the model fits well as per the paper 
+
+gamdorsallum <- gam(DorsalLumJND ~ s(SVL),
+                    data = single.SVL.constrastvals,
+                    family = gaussian,
+                    method = "REML")
+
+gam.check(gamdorsallum)
+## p value is 0.39
+##Also not significant therefore the model fits well 
+
+##Turn into data frames for plot purposes 
+
+
+summary(gamdorsalcol)
+summary(gamdorsallum)
+
+library(tidygam)
+
+gamDC <- as.data.frame(predict_gam(gamdorsalcol)) ##dorsalcolor
+gamDL <- as.data.frame(predict_gam(gamdorsallum)) ##dorsallum 
+
+Colplot <- 
+  ggplot(data = gamDC, 
+         aes(x = SVL, y = fit)) +
+  geom_point(data = single.SVL.constrastvals, 
+             aes(x = SVL, y = DorsalColJND),
+             color = "black",
+             alpha = 0.5,
+             shape = 3,
+             size = 1) +
+  geom_smooth() +
+  geom_line(color = "black", linewidth = 1) +
+  labs(x = "SVL (mm)",
+       y = "Chromatic contrast (dS)")+
+  scale_x_continuous(limits = c(0, 30), breaks = seq(0, 30, 5)) +
+  scale_y_continuous(limits = c(0, 15), breaks = seq(0, 15, 5)) +
+  theme_bw()
+
+library(tidygam)
+
+##Chromatic 
+
+##for frog of x size, color contrast of y
+gamDC <- as.data.frame(predict_gam(gamdorsalcol, length_out = 100)) ##increase plot points, predict gam is using an equation to try to get an expected answer 
+
+plotDC <- ggplot(gamDC, aes(x = SVL, y = DorsalColJND)) + 
+  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), fill = "grey") + ##smooth the funnel, ci is confidence intervals for the ribbon 
+   geom_point(data = single.SVL.constrastvals, 
+             aes(x = SVL, y = DorsalColJND),
+             color = "darkgreen",
+             alpha = 0.5, ##adjusts opacity of the points
+             shape = 3, ## shape of the points 
+             size = 1) + ##size 
+  geom_line(color = "green", linewidth = 1) +
+  labs(x = "SVL (mm)",
+       y = "Chromatic contrast (dS)")+
+  scale_x_continuous(limits = c(10, 30), breaks = seq(0, 30, 5)) +
+  scale_y_continuous(limits = c(0, 15), breaks = seq(0, 15, 5)) +
+  theme_bw() ##background is white 
+ 
+##Achromatic 
+
+gamDL <- as.data.frame(predict_gam(gamdorsallum, length_out = 100)) ##increase plot points, predict gam is using an equation to try to get an expected answer 
+
+plotDL <- ggplot(gamDL, aes(x = SVL, y = DorsalLumJND)) + 
+  geom_ribbon(aes(ymin = lower_ci, ymax = upper_ci), fill = "grey") + ##smooth the funnel, ci is confidence intervals for the ribbon 
+   geom_point(data = single.SVL.constrastvals,
+              
+             aes(x = SVL, y = DorsalLumJND),
+             color = "darkgreen",
+             alpha = 0.5, ##adjusts opacity of the points
+             shape = 3, ## shape of the points 
+             size = 1) + ##size 
+  geom_line(color = "green", linewidth = 1) +
+  labs(x = "SVL (mm)",
+       y = "Achromatic contrast (dS)")+
+  scale_x_continuous(limits = c(10, 30), breaks = seq(0, 30, 5)) +
+  scale_y_continuous(limits = c(0, 15), breaks = seq(0, 15, 5)) +
+  theme_bw() ##background is white 
+
+
+##Combined plot for visualization 
+
+DCDL_combined <- plotDC + plotDL + plot_layout(nrow=2) ##nrow stacks them versus having them side by side which would use ncol=2 instead 
+plot(DCDL_combined)
+
+
+
+
+
+```
+
+
+
+```{r}
+
+##Plots 3 ##Made updates to my code based on the rmarkdown from the paper 
+
+
+library(tidyverse)   # dplyr + ggplot2
+library(lme4)        # glmer(), lmer()
+library(glmmTMB)     # glmmTMB()
+library(car)         # Anova(), vif()
+library(mgcv)        # gam()
+library(tidygam)     # predict_gam()
+library(patchwork)   # combining plots
+library(performance) # check_collinearity()
+library(DHARMa)      # simulateResiduals()
+
+##Figure 3
+
+
+##response ~ FixedEffectColumn +
+##(RandomEffectColumn | Factor)
+
+## (RandomEffectColumn | Factor)  | is special interaction means there are different effects of the Factor, first is what changes and then the second is the group 
+
+##(1 | Factor) ##intercepts vary based on factor only. Only intercepts vary.
+
+##(0 + RandomEffectColumn | Factor) ##only models the slope not intercept. 
+
+
+##fixed and random affect are included because we care about the standard fixed effect also, not just the observed random we're looking at 
+
+linear <- lmer(SPMT ~ LightTmnt + SVL + (1 | FocalFrog), data = behavior_clean, na.action = na.exclude) ##secondary vals doesn't work here? 
+
+summary(linear)
+
+Anova(linear, type = "II", test.statistic = "F")
+
+##Analysis of Deviance Table (Type II Wald F tests with Kenward-Roger df)
+
+##Response: SPMT
+##               F Df Df.res   Pr(>F)   
+##LightTmnt 8.4800  1 222.32 0.003957 **
+##SVL       0.3454  1 107.51 0.557968  
+
+linear2 <- lmer(JPMT ~ LightTmnt + SVL + (1 | FocalFrog), data = behavior_clean, na.action = na.exclude)
+summary(linear2)
+
+Anova(linear2, type = "II", test.statistic = "F")
+
+##Analysis of Deviance Table (Type II Wald F tests with Kenward-Roger df)
+
+##Response: JPMT
+##               F Df Df.res  Pr(>F)  
+##LightTmnt 4.2816  1 231.74 0.03964 *
+##SVL       3.6697  1 101.52 0.05822 .
+
+library(lme4)
+glm_entry <- glmer(entry ~ SVL + DorsalColJND + DorsalLumJND + TimeOfDay + LightTmnt + (1 | FocalFrog), 
+                    family = binomial, data = behavior)
+Anova(glm_entry)
+summary(glm_entry)
+
+##SVL number negative, the bigger the frog the less likley it would enter the envoironment 
+##SD 0.7492 of focalfrog 
+
+
+##probability of entering based on size
+
+ggplot(behavior, aes(x = SVL, y = entry, color = TimeOfDay)) +
+  geom_point(position = position_jitter(height = 0.03), alpha = 0.4, size = 2) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial"), se = TRUE) +
+  scale_color_manual(values = c("Morning" = "yellow", "Afternoon" = "blue")) +
+  labs(
+    title = "Figure 2A: Entry Probability vs. Body Size & Time of Day",
+    x = "Body Size (SVL in mm)",
+    y = "Probability of Entering Arena (0 or 1)",
+    color = "Time of Day"
+  ) 
+```
+
+
+```{r}
+
+##What the paper did - Looking at behavior analysis of entry probabiltiy 
+
+library(tidyverse) # Organizing the data
+library(glmmTMB) # Performing the analysis
+library(car) # Comparing between models
+library(emmeans) # Calculating pariwise contrasts
+library(DHARMa) # Checking model fit / assumptions
+library(performance) # Checking model fit / assumptions
+library(ggplot2) # Plotting the data
+library(patchwork) # Combining plots into a multifaceted figure
+library(lme4)
+
+m1dat <- read.csv('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Assignments/HW 9/doi_10_5061_dryad_905qfttxx__v20250922/McEwen-etal-2025_BehaviourData.csv', stringsAsFactors = T)
+
+##Change day to a factor variable
+
+m1dat$Day <- as.factor(m1dat$Day)
+m1dat$TimeOfDay <- factor(m1dat$TimeOfDay, levels = c("Morning", "Afternoon")) ##make an ordered factor, don't need as, and levels are the sort 
+
+m1 <- glmmTMB(entry ~ LightTmnt + TimeOfDay + SVL + DorsalColJND + DorsalLumJND + (1 | Batch/Day/Round) + (1 | FocalFrog), data = m1dat, family = "binomial") ##generalized linear mixed model template, then choose all interaction factors, I guess we're looking at one batch per day per round, then choosing 1 frog per frog data to make sure we have the 90, binomial because yes no for entering the arena 
+
+##Plot residuals to check model fit and collinearity 
+
+simulateResiduals(fittedModel = m1, plot = T)
+##Crazy plots to look at, not sure if I'm reading them right but looks like no issues 
+plot(check_collinearity(m1)) ##had a prompt to install a package here to work, also not sure how to read this graph but paper says all tests non significant based on p values 
+
+#Get main effect data from model
+Anova(m1, type ="III")
+
+##               Chisq Df Pr(>Chisq)    
+##(Intercept)  15.7374  1  7.277e-05 ***
+##LightTmnt     2.9565  1  0.0855320 .  
+##TimeOfDay    11.3047  1  0.0007731 ***
+##SVL           8.3744  1  0.0038053 ** 
+##DorsalColJND  0.0026  1  0.9591372    
+##DorsalLumJND  0.5137  1  0.4735430  
+
+##Chisq indicated relationship between SVL and entry, pvalue 0.004, and also entry and time of day pvalue 0.0007731
+##All over variables above 0.05 non significant
+
+
+##So then check interactions between the two interaction points that are significant, size and time of day 
+
+m1interaction <- glmmTMB(entry ~ LightTmnt + TimeOfDay*SVL + DorsalColJND + DorsalLumJND + (1|Batch/Day/Round) + (1|FocalFrog), data = m1dat, family = "binomial") ##Same glmmTMBB, entry to light, time of day to body size, plus color measurements, 1 batch per day per round, 1 frog for the 90, data selection, still binomial yes no 
+##Then check with anova
+anova(m1, m1interaction) ##have to use lowercase a for anova 
+
+##chisq 0.04, p value 0.8359 - not too different from additive model before as per the paper so this interaction model confirms data
+
+
+   
+## Analyzing frog entry latency into the arena 
+
+
+m2dat <- subset(m1dat, entry == 1) ##remove trials where frog did not enter
+
+m2 <- glmmTMB(EntryLatency ~ LightTmnt + SVL + TimeOfDay + DorsalColJND + DorsalLumJND + (1|Batch/Day/Round) + (1|FocalFrog), data=m2dat, family=Gamma(link = "log")) ##using gamme and have to add link log here, because this is not yes no, this is counting entry latency times 
+
+##had to add m2dat to correct error 
+
+library(DHARMa)
+simulateResiduals(fittedModel = m2, plot = TRUE)
+
+library(performance)
+library(see)
+library(insight)
+
+plot(check_collinearity(m2))
+##non significant, model fits data 
+
+Anova(m2, type="III")
+
+##               Chisq Df Pr(>Chisq)    
+##(Intercept)  52.1767  1  5.072e-13 ***
+##LightTmnt     0.7226  1  0.3952826    
+##SVL           4.4281  1  0.0353508 *  
+##TimeOfDay    13.2135  1  0.0002779 ***
+##DorsalColJND  0.6894  1  0.4063655    
+##DorsalLumJND  0.5564  1  0.4556979
+
+##entry and body size correlation again and entry latency and time of day 
+
+m2interaction <- glmmTMB(EntryLatency ~ LightTmnt + SVL*TimeOfDay + DorsalColJND + DorsalLumJND + (1|Batch/Day/Round) + (1|FocalFrog), data=m2dat, family=Gamma(link="log"))
+anova(m2, m2interaction)
+
+##similar numbers to the additive model p = 0.1944
+
+
+```
+
+
+```{r}
+
+## light in the habitats versus real light in real environments 
+
+##as character 
+hab  <- trimws(as.character(light$Habitat))
+site <- trimws(as.character(light$Sub_Site))
+
+light$Group <- ifelse(hab == "BehaviourArena", site, hab)
+
+light$Group <- factor(light$Group,
+  levels = c("Low Treatment", "High Treatment", "Iyarina", "Forest", "Trail"),
+  labels = c("Arena: Low", "Arena: High", "Dawn/dusk", "Forest", "Trail"))
+
+par(mar = c(7, 5, 2, 1))
+boxplot(Lux ~ Group, data = light, col = 6:10, log = "y", las = 2, xlab = "",
+        ylab = "Lux log")
+
+
+```
+
