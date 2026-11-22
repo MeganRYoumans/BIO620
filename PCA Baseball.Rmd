@@ -1,0 +1,277 @@
+---
+title: "Baseball PCA"
+output:
+  html_document: default
+  word_document: default
+date: "2026-11-22"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+## PCA Principle Components Analysis
+
+```{r baseball pca}
+
+##Clean the data
+baseball <- read.csv('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Datasets 2/baseballCSV.csv', sep = ".")
+baseball <- read.csv('/Users/meganyoumans/Desktop/Adelphi Coursework/Statistical Modeling/Datasets 2/baseballCSV.csv', sep = "\t")
+baseball$Franchise <- factor(baseball$Franchise)
+nlevels(baseball$Franchise)
+##29 
+##set one color per team 
+team_cols <- rainbow(nlevels(baseball$Franchise))
+
+summary(baseball)
+head(baseball)
+str(baseball)
+
+library(vegan)
+library(MASS)
+library(caret)
+library(ggplot2)
+library(factoextra)
+
+```
+
+## Including Plots
+
+## https://www.r-bloggers.com/2026/06/pca-in-r-principal-component-analysis-step-by-step-prcomp-ggplot2/amp/ 
+
+##Part 1 - predictor variables 
+
+```{r baseball, echo=FALSE}
+
+sapply(baseball, class)
+num_vars <- c("Games", "Wins", "Losses", "Win.Loss.Percent", "Runs.Scored", "Runs.Allowed", "Home.Games", "Away.Games", "Home.Wins", "Home.Losss", "Away.Wins", "Away.Losses")
+num <- baseball[, num_vars]
+summary(num)
+##show all the number amounts for each category at once 
+colSums(is.na(baseball))
+##check for no data
+
+#checking correlations
+cor_mat <- cor(num)
+round(cor_mat, 2)
+## rounds the numbers
+heatmap(cor_mat, symm = TRUE, margins = c(7,7))
+pairs(num[, c("Games", "Wins", "Runs.Scored", "Runs.Allowed", "Home.Wins", "Win.Loss.Percent")], col = team_cols[baseball$Franchise], pch = 20, main = "scatterplot matrix")
+##very pretty 
+##scatterplot looks very linear in associations escept for win loss percent
+
+num <- baseball[, -1]
+apply(num, 2, shapiro.test)
+##all p-values are below 0.05 
+
+##adjust the data set for PCA 
+
+pca_test <- data.frame(
+  logGames = log(baseball$Games), 
+  WinPct = baseball$Wins / (baseball$Wins + baseball$Losses),
+  RunsGame = baseball$Runs.Scored / baseball$Games,
+  RunsAllowed = baseball$Runs.Allowed / baseball$Games,
+  HomeWin = baseball$Home.Wins / baseball$Home.Games,
+  AwayWin = baseball$Away.Wins / baseball$Away.Games, 
+  AtHome = baseball$Home.Games / baseball$Games
+)
+rownames(pca_test) <- baseball$Franchise
+str(pca_test)
+round(cor(pca_test), 2)
+apply(pca_test, 2, shapiro.test)
+
+##p value above 0.05 for runs allowed, and at home games 
+
+#Scale the data for PCA
+data_scaled <- scale(pca_test)
+summary(data_scaled)
+head(data_scaled)
+
+pca <- prcomp(pca_test, scale = TRUE)
+summary(pca)
+
+##Importance of components:
+##                          PC1    PC2    PC3    PC4     PC5     PC6     PC7
+##Standard deviation     1.8676 1.1568 0.9764 0.8683 0.61700 0.27057 0.11257
+##Proportion of Variance 0.4983 0.1912 0.1362 0.1077 0.05438 0.01046 0.00181
+##Cumulative Proportion  0.4983 0.6895 0.8256 0.9334 0.98773 0.99819 1.00000
+
+pca$rotation ##rotate like the bottle analogy 
+
+##Eigenvalues 
+
+plot(pca$sdev^2, type = "b", xlab = "PCA", ylab = "Eigen", main = "Plot")
+abline(h = 1, lty = 2, col = "blue")
+fviz_eig(pca, addlabels = TRUE, barfill = "green", barcolor = "green", linecolor = "red", main = "Scree plot")
+##that's really cool 
+##Returns a standard ggplot object, can theme it using this method 
+
+pve <- pca$sdev^2 / sum (pca$sdev^2)
+cum_pve <- cumsum(pve)
+plot(cum_pve, type = "b", xlab = "PC", ylab = "Cum Prop of Var")
+## cumulative variance, things above 0.8 are good so 3, 4, 5, 6 and maybe 7? 
+
+biplot(pca, scale = 0)
+##uhh ok, fixing it next with ggplot2 
+
+fviz_pca_biplot(pca, 
+                geom.ind = c("point", "text"),
+                col.ind = baseball$Franchise,
+                palette = team_cols,
+                col.var = "black",
+                repel = TRUE,
+                level.title = "Test") + theme_minimal() + theme(legend.position = "none")
+
+##broken stick 
+
+broken_stick <- function(P) {
+sequence <- 1:P
+divided <- 1/sequence
+seq_sums <- sapply(sequence,FUN=function(k){
+subset <- divided[k:P]
+subset_sum <- sum(subset)
+i <- subset_sum/P
+return(i)
+})
+return(seq_sums)
+}
+
+P <- ncol(pca_test)
+bs <- broken_stick(P)
+round(bs, 3)
+
+pve <- pca$sdev^2 / sum (pca$sdev^2)
+round(pve, 3)
+
+
+data.frame(PC = paste0("PC", 1:P),
+           Observed = round(pve, 3),
+           BrokenStick = round(bs, 3), 
+           Eigenvalue = round(pca$sdev^2, 2),
+           BeatsStick = pve > bs) 
+
+##Plot 
+plot(1:P, pve, type = "b,", pch=20, ylim = c(0, max(pve, bs)),
+     xlab = "PC", ylab = "Prop Variance", 
+     main = "Observed vs BS")
+lines(1:P, bs, type = "b", pch = 1, lty = 2, col = "blue")
+legend("topright", c("Observed", "BS"), col = c("black", "blue"), lty = c(1,2), pch = c(20,1))
+
+
+
+## make a cutoff 
+## Only PC1 beats the BS test and PC 2 is above eigenvalue 
+
+n_keep <- 2
+scores <- pca$x[, 1:n_keep]
+team_cols <- rainbow(nrow(baseball))
+pairs(scores, col = team_cols, pch = 19, main = "Retained PC")
+round(pca$rotation[, 1:n_keep], 3)
+summary(pca)$importance[, 1:n_keep]
+
+##                            PC1      PC2
+##Standard deviation     1.867629 1.156766
+##Proportion of Variance 0.498290 0.191160
+##Cumulative Proportion  0.498290 0.689450
+
+fviz_contrib(pca, choice = "var", axes = 1)
+fviz_contrib(pca, choice = "var", axes = 2)
+##not sure here if we're looking to keep above or below the contributions line 
+
+
+##Vegan NMDS 
+##are teams similar to each other 
+
+nmds_data <- scale(pca_test)
+set.seed(42) 
+## vegan NMDA needs a random seed set to start 
+nmds <- metaMDS(nmds_data, distance = "euclidian", k= 2, trymax= 100, autotransform = FALSE, trace = FALSE)
+
+nmds
+##Dimensions: 2 
+##Stress:     0.1118411 
+##Stress type 1, weak ties
+##Best solution was repeated 7 times in 20 tries
+##The best solution was from try 1 (random start)
+##Scaling: centring, PC rotation 
+##Species: scores missing
+
+nmds$stress
+## [1] 0.1118411
+
+stressplot(nmds, main = "Plot")
+plot(nmds$points, type = "n", xlab = "NMDS1", ylab = "NMDS2", 
+     main = paste0("NMDS (stress = ", round(nmds$stress, 3), ")"))
+points(nmds$points, col = team_cols, pch = 19)
+text(nmds$points, labels = baseball$Franchise, cex = 0.5, pos = 3)
+fit <- envfit(nmds, pca_test, permutations = 999)
+plot(fit, col = "green", cex = 0.7)
+fit ##show vector numbers 
+## there are some outlier numbers that are not near the vector lines, many teams are correlated to the log games area or btween log games nad runs allowed
+
+
+## https://www.r-bloggers.com/2024/02/linear-discriminant-analysis-lda-in-r/ 
+## https://rpubs.com/maulikpatel/229684 
+
+
+
+## LDA test - assumes no colinear, predictors normal, similar covariance 
+## where are the baseball teams best separaated from each other / division 
+
+##have to make groups first 
+
+East<- c("Baltimore.Orioles", "New.York.Yankees", "Tampa.Bay.Rays",
+                "Toronto.Blue.Jays")
+Central<- c("Chicago.White.Sox", "Cleveland.Indians", "Detroit.Tigers",
+                "Kansas.City.Royals", "Minnesota.Twins")
+West <- c("Los.Angeles.Angels.of.Anaheim", "Oakland.Athletics",
+                "Seattle.Mariners", "Texas.Rangers")
+
+baseball$Division <- ifelse(baseball$Franchise %in% East, "East",
+                     ifelse(baseball$Franchise %in% Central, "Central",
+                     ifelse(baseball$Franchise %in% West, "West", "NL")))
+baseball$Division <- factor(baseball$Division)
+
+
+table(baseball$Division)
+
+##Central    East      NL    West 
+##      5       4      16       4 
+
+lda_df <- data.frame(pca_test[, c("logGames", "RunsGame", "RunsAllowed", "HomeWin", "AwayWin")], Division = baseball$Division)
+round(cor(lda_df[, 1:5]), 2)
+
+
+##            logGames RunsGame RunsAllowed HomeWin AwayWin
+##logGames        1.00    -0.39        0.37   -0.33   -0.26
+##RunsGame       -0.39     1.00       -0.03    0.48    0.37
+##RunsAllowed     0.37    -0.03        1.00   -0.70   -0.60
+##HomeWin        -0.33     0.48       -0.70    1.00    0.38
+##AwayWin        -0.26     0.37       -0.60    0.38    1.00
+
+
+lda_fit <- lda(Division ~ ., data= lda_df)  ## predict the division from every other column
+lda_fit
+lda_scores <- predict(lda_fit)$x
+
+##Prior probabilities of groups:
+##  Central      East        NL      West 
+##0.1724138 0.1379310 0.5517241 0.1379310 
+
+## plot the datafor L1 and L2 
+div_cols <- c("red", "green", "blue", "yellow")
+plot(lda_scores[, 1], lda_scores[, 2],
+     col = div_cols[baseball$Division], pch = 20,
+xlab = "LD1", ylab = "LD2", main = "LD1 vs LD2")
+text(lda_scores[, 1], lda_scores[, 2], labels = baseball$Franchise, cex = 0.5, pos = 3)
+legend("topright", levels(baseball$Division), col = div_cols, pch = 18, cex = 0.7)
+
+##The teams are pretty split with NL only below 0 and the other divisions above 0 
+
+
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
